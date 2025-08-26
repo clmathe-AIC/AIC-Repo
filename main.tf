@@ -1,0 +1,71 @@
+# Configure the AWS Provider
+provider "aws" {
+region = "us-east-1" # Specify your desired AWS region
+}
+
+# Data source to retrieve the latest Ubuntu AMI
+
+data "aws_ami" "latest_RHEL8_ami" {
+most_recent = true
+owners = ["966922279128"]
+filter {
+name = "name"
+values = ["eVo_AMI_RHEL8-*"]
+}
+}
+
+data "aws_ami" "latest_RHEL9_ami" {
+most_recent = true
+owners = ["966922279128"]
+filter {
+name = "name"
+values = ["eVo_AMI_RHEL9-*"]
+}
+}
+
+resource "aws_instance" "test_vm" {
+
+ami = data.aws_ami.latest_RHEL9_ami.id
+key_name = "clmathe-evo"
+root_block_device {
+volume_size = 50 # Sets the root volume size to 50 GiB
+volume_type = "gp3" # Optional: specify volume type (e.g., gp2, gp3)
+delete_on_termination = true # Optional: whether to delete volume on instance termination
+
+}
+vpc_security_group_ids = ["sg-0013d33699e7e69cc"]
+instance_type = "t2.micro"
+#associate_public_ip_address = true
+subnet_id = "subnet-087dd641cea6d393f"
+tags = {
+Name = "test terraform",
+}
+}
+# Define the AWS Security Group
+resource "aws_security_group" "terraform_server_sg" {
+name = "terraform_server_security_group"
+description = "Allow inbound HTTP and SSH traffic"
+vpc_id = "vpc-0eda63b3db7b50500" # Replace with your VPC ID or reference
+
+ingress {
+from_port = 80
+to_port = 80
+protocol = "tcp"
+cidr_blocks = ["0.0.0.0/0"]
+}
+
+ingress {
+from_port = 22
+to_port = 22
+protocol = "tcp"
+cidr_blocks = ["0.0.0.0/0"]
+}
+
+egress {
+from_port = 0
+to_port = 0
+protocol = "-1" # Allows all outbound traffic
+cidr_blocks = ["0.0.0.0/0"]
+
+}
+}
